@@ -85,28 +85,29 @@ http://localhost:8080
 
 ### ✅ Resposta de sucesso
 
-```json
 {
   "id": 1,
   "nome": "Anderson",
   "categoria": 2,
   "apelido": "Spider",
   "arte": 1
-}```
+}
 
 ❌ Erro
 
-```json
 {
   "erro": "Lutador não encontrado"
-}```
+}
 
 
 🚀 Como Executar
+
 1️⃣ Inicie o MongoDB
 mongod
+
 2️⃣ Compile o projeto
 mvn clean install
+
 3️⃣ Execute a aplicação
 mvn exec:java
 
