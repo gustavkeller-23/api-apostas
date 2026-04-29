@@ -69,54 +69,17 @@ http://localhost:8080
 
 ---
 
-## 📡 Endpoints
-
-### 📄 Listar todos
+## 📡 Requisições
 
 
-GET /lutadores
+| Tipo                 | Método  |  Requisição                                         |
+|----------------------|---------|-----------------------------------------------------|
+| 📄 Listar todos      | GET    |  /lutadores                                          |
+| 🔍 Buscar por ID     | GET    | /lutadores/{id}                                      |
+| ➕ Criar lutador     | POST   | /lutadores?nome=X&apelido=X&categoria=X&arte=X       |
+| ✏️ Atualizar lutador | PUT    | /lutadores/{id}?nome=X&apelido=X&categoria=X&arte=X  |
+| ❌ Deletar lutador   | DELETE |  /lutadores/{id}                                     |
 
-
----
-
-### 🔍 Buscar por ID
-
-
-GET /lutadores/{id}
-
-
----
-
-### ➕ Criar lutador
-
-
-POST /lutadores?nome=X&apelido=X&categoria=X&arte=X
-
-
-📌 Exemplo:
-
-POST /lutadores?nome=Anderson&apelido=Spider&categoria=2&arte=1
-
-
----
-
-### ✏️ Atualizar lutador
-
-
-PUT /lutadores/{id}?nome=X&apelido=X&categoria=X&arte=X
-
-
-📌 Atualiza apenas os campos enviados
-
----
-
-### ❌ Deletar lutador
-
-
-DELETE /lutadores/{id}
-
-
----
 
 ## 🧪 Exemplos
 
@@ -129,12 +92,15 @@ DELETE /lutadores/{id}
   "categoria": 2,
   "apelido": "Spider",
   "arte": 1
-}
+}```
 
 ❌ Erro
+
+```json
 {
   "erro": "Lutador não encontrado"
-}
+}```
+
 
 🚀 Como Executar
 1️⃣ Inicie o MongoDB
@@ -145,46 +111,3 @@ mvn clean install
 mvn exec:java
 
 ou rode a classe Main.java.
-
-🔐 CORS
-
-A API permite acesso de qualquer origem:
-
-Access-Control-Allow-Origin: *
-Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
-⚠️ Observações
-O ID é gerado manualmente (incremental)
-Pode haver problemas em ambientes concorrentes
-Serialização JSON é feita manualmente
-📈 Melhorias Futuras
-🚀 Migrar para Spring Boot
-🔐 Implementar autenticação (JWT)
-📦 Usar Jackson/Gson
-🔢 Melhorar geração de ID (UUID/ObjectId)
-📄 Adicionar validações
-📊 Paginação de resultados
-🎯 Objetivo
-
-Projeto ideal para aprendizado de:
-
-APIs REST
-Integração com MongoDB
-HTTP puro em Java
-👨‍💻 Autor
-
-Desenvolvido por você 🚀
-
-⭐ Contribuição
-
-Sinta-se livre para contribuir com melhorias!
-
-
----
-
-Se quiser, posso dar um upgrade ainda maior:
-- :contentReference[oaicite:0]{index=0}
-- :contentReference[oaicite:1]{index=1}
-- :contentReference[oaicite:2]{index=2}
-- :contentReference[oaicite:3]{index=3}
-
-Só falar 👍
