@@ -1,0 +1,421 @@
+/* ── Reset ── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ── Body ── */
+body {
+  font-family: 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  background: #060d1f;
+  color: #c8daf0;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ── Background ── */
+.bg {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 10% 50%, rgba(10,40,100,0.55) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 50%, rgba(10,40,100,0.55) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(20,60,120,0.4) 0%, transparent 55%),
+    linear-gradient(180deg, #060d1f 0%, #0d1e3a 50%, #060d1f 100%);
+  z-index: 0;
+}
+
+/* hexagon grid background */
+.hex-grid {
+  position: fixed;
+  inset: 0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='104' viewBox='0 0 120 104'%3E%3Cpolygon points='60,2 116,32 116,72 60,102 4,72 4,32' fill='none' stroke='%231a3a6a' stroke-width='0.8' opacity='0.4'/%3E%3C/svg%3E");
+  background-size: 120px 104px;
+  opacity: 0.5;
+  z-index: 0;
+}
+
+/* ── Page layout ── */
+.page-wrapper {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 36px 20px 60px;
+}
+
+/* ── Header ── */
+header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.logo {
+  font-size: 3rem;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 4px;
+  color: #f0c040;
+  text-shadow:
+    0 0 30px rgba(240,192,64,0.55),
+    0 3px 0 #7a5008,
+    3px 5px 12px rgba(0,0,0,0.9);
+}
+
+.subtitle {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: #6ab0ff;
+  text-shadow: 0 0 12px rgba(100,180,255,0.4);
+  margin-top: 4px;
+}
+
+/* ── Mascotes ── */
+.mascot {
+  position: fixed;
+  bottom: 0;
+  width: 110px;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.7));
+  z-index: 5;
+}
+.mascot-left  { left: 30px; }
+.mascot-right { right: 30px; }
+
+/* ── Main card ── */
+.card {
+  width: 100%;
+  max-width: 620px;
+  background: rgba(8,20,48,0.75);
+  border: 1.5px solid rgba(40,140,255,0.3);
+  border-radius: 14px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 0 1px rgba(40,140,255,0.1),
+    0 0 50px rgba(20,90,220,0.2),
+    0 20px 60px rgba(0,0,0,0.7);
+  overflow: hidden;
+}
+
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  border-bottom: 1.5px solid rgba(40,140,255,0.25);
+}
+
+.tab {
+  flex: 1;
+  padding: 14px 8px;
+  background: transparent;
+  border: none;
+  color: rgba(160,200,255,0.5);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.tab:hover { color: rgba(160,200,255,0.85); background: rgba(40,140,255,0.06); }
+
+.tab.active {
+  color: #f0c040;
+  border-bottom-color: #f0c040;
+  background: rgba(240,192,64,0.06);
+}
+
+/* ── Tab content ── */
+.tab-content { display: none; padding: 24px; }
+.tab-content.active { display: block; }
+
+/* ── Form card (inner) ── */
+.form-card {
+  background: rgba(10,25,60,0.6);
+  border: 1px solid rgba(40,140,255,0.2);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.form-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  background: rgba(20,50,100,0.4);
+  border-bottom: 1px solid rgba(40,140,255,0.2);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #a0c8f0;
+}
+
+.icon-user { width: 18px; height: 18px; fill: #6ab0ff; flex-shrink: 0; }
+
+.form-actions-top { margin-left: auto; display: flex; gap: 8px; }
+
+.badge {
+  margin-left: auto;
+  background: #f0c040;
+  color: #1a0e00;
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+/* ── Form body ── */
+.form-body { padding: 20px 18px 18px; display: flex; flex-direction: column; gap: 14px; }
+
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.form-row label {
+  width: 180px;
+  flex-shrink: 0;
+  font-size: 0.84rem;
+  color: #90b8e0;
+}
+
+.form-row input,
+.form-row .select-wrap,
+.form-row .input-wrap { flex: 1; }
+
+input[type="text"],
+input[type="password"],
+select {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px;
+  color: #dce8f8;
+  font-size: 0.88rem;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  appearance: none;
+}
+
+input::placeholder { color: rgba(160,200,255,0.3); }
+input:focus, select:focus {
+  border-color: rgba(60,170,255,0.6);
+  background: rgba(255,255,255,0.09);
+}
+
+.input-wrap { position: relative; }
+.input-wrap input { padding-right: 40px; }
+.input-icon {
+  position: absolute;
+  right: 12px; top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.35;
+}
+.input-icon svg { width: 16px; height: 16px; fill: #6ab0ff; display: block; }
+
+.select-wrap { position: relative; }
+.select-wrap::after {
+  content: '▾';
+  position: absolute;
+  right: 12px; top: 50%;
+  transform: translateY(-50%);
+  color: #6ab0ff;
+  pointer-events: none;
+  font-size: 0.8rem;
+}
+
+select option { background: #0d1e3a; color: #dce8f8; }
+
+/* ── Botões principais ── */
+.btn-cadastrar, .btn-remover {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+
+.btn-cadastrar {
+  background: linear-gradient(135deg, #28c840 0%, #188028 100%);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(40,200,64,0.4);
+}
+
+.btn-remover {
+  background: linear-gradient(135deg, #e03030 0%, #901010 100%);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(220,50,50,0.4);
+}
+
+.btn-cadastrar:hover, .btn-remover:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn-cadastrar:active, .btn-remover:active { transform: scale(0.98); }
+
+/* ── Icon buttons ── */
+.icon-btn {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 5px;
+  padding: 5px 7px;
+  cursor: pointer;
+  color: #90b8e0;
+  transition: background 0.2s;
+  display: flex; align-items: center;
+}
+.icon-btn svg { width: 15px; height: 15px; fill: currentColor; display: block; }
+.icon-btn:hover { background: rgba(255,255,255,0.13); }
+.icon-btn.danger { color: #f07070; }
+.icon-btn.danger:hover { background: rgba(220,50,50,0.2); }
+.icon-btn.sm svg { width: 14px; height: 14px; }
+
+/* ── Tabela ── */
+.table-wrap { overflow-x: auto; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+
+thead tr { background: rgba(20,50,100,0.5); }
+thead th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 0.72rem;
+  letter-spacing: 1.5px;
+  color: #6ab0ff;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(40,140,255,0.25);
+}
+
+tbody tr { border-bottom: 1px solid rgba(40,140,255,0.1); transition: background 0.15s; }
+tbody tr:hover { background: rgba(40,140,255,0.07); }
+tbody td { padding: 10px 14px; color: #c0d8f0; }
+
+.empty-row td {
+  text-align: center;
+  padding: 30px;
+  color: rgba(160,200,255,0.3);
+  font-style: italic;
+}
+
+.tag {
+  background: rgba(40,140,255,0.15);
+  border: 1px solid rgba(40,140,255,0.3);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 0.78rem;
+  font-family: monospace;
+  color: #80c0ff;
+}
+
+.cat-badge {
+  background: rgba(240,192,64,0.15);
+  border: 1px solid rgba(240,192,64,0.3);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.76rem;
+  color: #f0c040;
+  font-weight: 700;
+}
+
+.apelido { color: #6ab0ff; font-style: italic; }
+
+/* ── Remover preview ── */
+.remove-hint { font-size: 0.82rem; color: rgba(160,200,255,0.5); margin-bottom: 4px; }
+
+.preview-box {
+  background: rgba(220,50,50,0.08);
+  border: 1px solid rgba(220,50,50,0.25);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.preview-row { display: flex; gap: 12px; font-size: 0.83rem; }
+.preview-row span { color: rgba(160,200,255,0.5); width: 90px; flex-shrink: 0; }
+.preview-row strong { color: #dce8f8; }
+
+/* ── Footer ── */
+footer {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.68rem;
+  letter-spacing: 2px;
+  color: rgba(160,200,255,0.25);
+  text-transform: uppercase;
+  z-index: 10;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(10,30,70,0.95);
+  border: 1px solid rgba(40,140,255,0.4);
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #dce8f8;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 100;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.ok   { border-color: rgba(40,200,64,0.5); color: #80e898; }
+.toast.erro { border-color: rgba(220,50,50,0.5); color: #f08080; }
+
+/* ── Botão editar na tabela ── */
+.icon-btn.edit { color: #f0c040; }
+.icon-btn.edit:hover { background: rgba(240,192,64,0.18); }
+
+.acoes-col { display: flex; gap: 6px; align-items: center; }
+
+/* ── Botão salvar edição ── */
+.btn-cadastrar.editando {
+  background: linear-gradient(135deg, #f0c040 0%, #c88010 100%);
+  color: #1a0e00;
+  box-shadow: 0 4px 20px rgba(240,192,64,0.4);
+}
+
+/* ── Botão cancelar edição ── */
+.btn-cancelar {
+  width: 100%;
+  padding: 11px;
+  border: 1.5px solid rgba(160,200,255,0.25);
+  border-radius: 7px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  background: transparent;
+  color: rgba(160,200,255,0.6);
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.btn-cancelar:hover {
+  background: rgba(160,200,255,0.08);
+  color: #a0c8f0;
+  border-color: rgba(160,200,255,0.45);
+}
+
+/* ── ID desabilitado no modo edição ── */
+input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

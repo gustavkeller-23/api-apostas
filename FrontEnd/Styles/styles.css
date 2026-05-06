@@ -1,0 +1,314 @@
+/* ── Reset ── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ── Body ── */
+body {
+  font-family: 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d1117;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Background ── */
+.bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 15% 50%, rgba(20, 50, 100, 0.55) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 50%, rgba(20, 50, 100, 0.55) 0%, transparent 55%),
+    linear-gradient(160deg, rgba(8, 12, 20, 0.60) 0%, rgba(20, 32, 58, 0.45) 50%, rgba(8, 12, 20, 0.60) 100%),
+    url('assets/lutasTelaLogin.png') center center / cover no-repeat;
+  z-index: 0;
+}
+
+/* ── Coin particles ── */
+.particles {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f8d848, #c88010);
+  opacity: 0;
+  animation: float-up 4s ease-in-out infinite;
+}
+
+.particle:nth-child(1) { width: 14px; height: 14px; left: 28%; top: 65%; animation-delay: 0s;    animation-duration: 3.5s; }
+.particle:nth-child(2) { width: 10px; height: 10px; left: 32%; top: 72%; animation-delay: 0.5s;  animation-duration: 4.2s; }
+.particle:nth-child(3) { width: 18px; height: 18px; left: 25%; top: 78%; animation-delay: 1s;    animation-duration: 3.2s; }
+.particle:nth-child(4) { width:  8px; height:  8px; left: 35%; top: 68%; animation-delay: 1.5s;  animation-duration: 4.8s; }
+.particle:nth-child(5) { width: 12px; height: 12px; left: 22%; top: 82%; animation-delay: 2s;    animation-duration: 3.8s; }
+.particle:nth-child(6) { width: 16px; height: 16px; left: 30%; top: 60%; animation-delay: 2.5s;  animation-duration: 3s;   }
+
+@keyframes float-up {
+  0%   { opacity: 0;    transform: translateY(0px)    scale(0.8); }
+  30%  { opacity: 0.9;  transform: translateY(-30px)  scale(1);   }
+  70%  { opacity: 0.6;  transform: translateY(-75px)  scale(0.9); }
+  100% { opacity: 0;    transform: translateY(-120px) scale(0.7); }
+}
+
+/* ── Card wrapper ── */
+.card-wrapper {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Logo ── */
+.logo {
+  font-size: 2.6rem;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 3px;
+  color: #f0c040;
+  text-shadow:
+    0 0 24px rgba(240, 192, 64, 0.65),
+    0 2px 0 #7a5008,
+    2px 4px 10px rgba(0, 0, 0, 0.85);
+  margin-bottom: -14px;
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Login card ── */
+.login-card {
+  position: relative;
+  background: rgba(8, 18, 40, 0.80);
+  border: 1.5px solid rgba(40, 160, 255, 0.45);
+  border-radius: 18px;
+  padding: 36px 40px 30px;
+  width: 340px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 0 1px rgba(40, 160, 255, 0.12),
+    0 0 50px rgba(20, 110, 230, 0.28),
+    0 24px 60px rgba(0, 0, 0, 0.75);
+  transition: min-height 0.3s ease;
+}
+
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 18%;
+  right: 18%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(80, 190, 255, 0.85), transparent);
+  border-radius: 2px;
+}
+
+/* ── Mascotes ── */
+.mascot {
+  position: absolute;
+  pointer-events: none;
+  object-fit: contain;
+}
+
+.mascot-top {
+  position: relative;
+  width: 110px;
+  margin-bottom: -8px;
+  z-index: 3;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6));
+}
+
+.mascot-tiger {
+  width: 120px;
+  right: -95px;
+  top: 30px;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6));
+}
+
+.mascot-bunny {
+  width: 110px;
+  left: -90px;
+  bottom: -10px;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6));
+}
+
+/* ── Campos ── */
+.field {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.field input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  color: #dce8f8;
+  font-size: 0.95rem;
+  padding: 13px 44px 13px 16px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.field input::placeholder { color: rgba(180, 210, 255, 0.4); }
+
+.field input:focus {
+  border-color: rgba(60, 180, 255, 0.65);
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.eye-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  opacity: 0.45;
+  transition: opacity 0.2s;
+}
+
+.eye-icon:hover { opacity: 0.8; }
+
+.eye-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: #a0c4e8;
+  display: block;
+}
+
+/* ── Botão Login / Criar ── */
+.btn-login {
+  width: 100%;
+  padding: 13px;
+  margin-top: 6px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #eaaa22 0%, #c87010 55%, #eaaa22 100%);
+  color: #1c0e00;
+  box-shadow: 0 4px 20px rgba(220, 145, 20, 0.50);
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.btn-login:hover  { opacity: 0.90; transform: translateY(-1px); }
+.btn-login:active { transform: scale(0.98); }
+
+.btn-criar {
+  background: linear-gradient(135deg, #28c840 0%, #188028 100%);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(40, 200, 64, 0.40);
+}
+
+/* ── Links ── */
+.links {
+  margin-top: 18px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.links span {
+  font-size: 0.84rem;
+  color: rgba(190, 215, 255, 0.55);
+}
+
+.links a {
+  font-size: 0.84rem;
+  color: #4ab8ff;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.links a:hover { color: #88d4ff; text-decoration: underline; }
+
+/* ── Cabeçalho da tela de cadastro ── */
+.cadastro-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.cadastro-titulo {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #a0c8f0;
+}
+
+.btn-voltar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid rgba(160, 200, 255, 0.2);
+  border-radius: 6px;
+  color: rgba(160, 200, 255, 0.6);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.btn-voltar svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.btn-voltar:hover {
+  background: rgba(160, 200, 255, 0.08);
+  color: #a0c8f0;
+  border-color: rgba(160, 200, 255, 0.4);
+}
+
+/* ── Rodapé ── */
+.footer-note {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  color: rgba(170, 200, 240, 0.35);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  z-index: 20;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(8, 18, 48, 0.95);
+  border: 1px solid rgba(40, 140, 255, 0.4);
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #dce8f8;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 100;
+  white-space: nowrap;
+}
+
+.toast.show  { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.ok    { border-color: rgba(40, 200, 64, 0.5);  color: #80e898; }
+.toast.erro  { border-color: rgba(220, 50, 50, 0.5);  color: #f08080; }

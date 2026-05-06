@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NanadeFight – Admin Panel</title>
+  <link rel="stylesheet" href="../Styles/tela2.css" />
+</head>
+<body>
+
+  <div class="bg"></div>
+  <div class="hex-grid"></div>
+
+  <div class="page-wrapper">
+
+    <header>
+      <h1 class="logo">NANADEFIGHT</h1>
+    </header>
+
+    <img class="mascot mascot-left"  src="assets/mascot-mouse.png"  alt="Rato" />
+    <img class="mascot mascot-right" src="assets/mascot-bunny.png"  alt="Coelho" />
+
+    <div class="card">
+
+      <div class="tabs">
+        <button class="tab active" data-tab="cadastrar">[ CADASTRAR NOVO LUTADOR ]</button>
+        <button class="tab"        data-tab="listar"   >[ LISTAR LUTADORES ]</button>
+        <button class="tab"        data-tab="remover"  >[ REMOVER LUTADORES ]</button>
+      </div>
+
+      <!-- ABA: CADASTRAR -->
+      <div class="tab-content active" id="tab-cadastrar">
+        <div class="form-card">
+          <div class="form-header">
+            <svg class="icon-user" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+            <span id="form-titulo">NOVO CADASTRO DE LUTADOR</span>
+            <div class="form-actions-top">
+              <button class="icon-btn danger" title="Limpar" onclick="cancelarEdicao()">
+                <svg viewBox="0 0 24 24"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="form-body">
+            <div class="form-row">
+              <label>ID do Lutador:</label>
+              <div class="input-wrap">
+                <input type="text" id="inputId" placeholder="Ex: LUT-001" />
+                <span class="input-icon">
+                  <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 14H4V8l8 5 8-5v10zm-8-7L4 6h16l-8 5z"/></svg>
+                </span>
+              </div>
+            </div>
+            <div class="form-row">
+              <label>Nome Completo:</label>
+              <input type="text" id="inputNome" placeholder="Nome do lutador" />
+            </div>
+            <div class="form-row">
+              <label>Categoria:</label>
+              <div class="select-wrap">
+                <select id="inputCategoria">
+                  <option value="">-</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <label>Apelido / Username:</label>
+              <input type="text" id="inputApelido" placeholder="@apelido" />
+            </div>
+            <div class="form-row">
+              <label>Arte do Perfil / Avatar:</label>
+              <div class="select-wrap">
+                <select id="inputArte">
+                  <option value="">-</option>
+                  <option value="1">1 – Boxe</option>
+                  <option value="2">2 – Karatê</option>
+                  <option value="3">3 – Muay Thai</option>
+                </select>
+              </div>
+            </div>
+
+            <button class="btn-cadastrar" id="btn-principal" onclick="cadastrarLutador()">CADASTRAR LUTADOR</button>
+            <button class="btn-cancelar"  id="btn-cancelar"  onclick="cancelarEdicao()" style="display:none">CANCELAR EDIÇÃO</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA: LISTAR -->
+      <div class="tab-content" id="tab-listar">
+        <div class="form-card">
+          <div class="form-header">
+            <svg class="icon-user" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+            <span>LUTADORES CADASTRADOS</span>
+            <span class="badge" id="badge-total">0</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome</th>
+                  <th>Categoria</th>
+                  <th>Apelido</th>
+                  <th>Arte</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-lutadores">
+                <tr class="empty-row">
+                  <td colspan="6">Nenhum lutador cadastrado ainda.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA: REMOVER -->
+      <div class="tab-content" id="tab-remover">
+        <div class="form-card">
+          <div class="form-header">
+            <svg class="icon-user" viewBox="0 0 24 24"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            <span>REMOVER LUTADOR</span>
+          </div>
+          <div class="form-body">
+            <p class="remove-hint">Selecione o lutador pelo ID para remover:</p>
+            <div class="form-row">
+              <label>ID do Lutador:</label>
+              <div class="select-wrap">
+                <select id="selectRemover">
+                  <option value="">- Selecione -</option>
+                </select>
+              </div>
+            </div>
+            <div id="preview-remover" class="preview-box" style="display:none"></div>
+            <button class="btn-remover" onclick="removerLutador()">REMOVER LUTADOR</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <footer>APOSTAS RESPONSÁVEIS</footer>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="../scripts/tela2.js"></script>
+</body>
+</html>

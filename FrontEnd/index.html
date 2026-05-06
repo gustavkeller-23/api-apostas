@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NanadeFight – Login</title>
+  <link rel="stylesheet" href="Styles/styles.css" />
+</head>
+<body>
+
+  <div class="bg"></div>
+
+  <div class="particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+  </div>
+
+  <div class="card-wrapper">
+
+    <img class="mascot mascot-top" src="assets/mascot-mouse.png" alt="Mascote Rato" />
+
+    <div class="logo">NANADEFIGHT</div>
+
+    <div class="login-card">
+
+      <img class="mascot mascot-tiger" src="assets/mascot-tiger.png" alt="Mascote Tigre" />
+      <img class="mascot mascot-bunny" src="assets/mascot-bunny.png" alt="Mascote Coelho" />
+
+      <!-- ── TELA DE LOGIN ── -->
+      <div id="tela-login">
+        <div class="field">
+          <input type="text" id="loginUsuario" placeholder="Usuário" autocomplete="username" />
+        </div>
+
+        <div class="field">
+          <input type="password" placeholder="Senha" autocomplete="current-password" id="pwdInput" />
+          <span class="eye-icon" onclick="togglePwd('pwdInput')">
+            <svg viewBox="0 0 24 24"><path d="M12 5C7 5 2.73 8.11 1 12c1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+          </span>
+        </div>
+
+        <button class="btn-login" onclick="fazerLogin()">Login</button>
+
+        <div class="links">
+          <span>Esqueceu a senha?</span>
+          <a href="#" onclick="mostrarCadastro(); return false;">Criar Conta</a>
+        </div>
+      </div>
+
+      <!-- ── TELA DE CADASTRO ── -->
+      <div id="tela-cadastro" style="display:none;">
+
+        <div class="cadastro-header">
+          <button class="btn-voltar" onclick="mostrarLogin()">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            Voltar
+          </button>
+          <span class="cadastro-titulo">CRIAR CONTA</span>
+        </div>
+
+        <div class="field">
+          <input type="text" id="cadUsuario" placeholder="Nome de Usuário" autocomplete="username" />
+        </div>
+
+        <div class="field">
+          <input type="password" id="cadSenha" placeholder="Senha" autocomplete="new-password" />
+          <span class="eye-icon" onclick="togglePwd('cadSenha')">
+            <svg viewBox="0 0 24 24"><path d="M12 5C7 5 2.73 8.11 1 12c1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+          </span>
+        </div>
+
+        <div class="field">
+          <input type="password" id="cadSenhaConf" placeholder="Confirmar Senha" autocomplete="new-password" />
+          <span class="eye-icon" onclick="togglePwd('cadSenhaConf')">
+            <svg viewBox="0 0 24 24"><path d="M12 5C7 5 2.73 8.11 1 12c1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+          </span>
+        </div>
+
+        <button class="btn-login btn-criar" onclick="criarConta()">CRIAR CONTA</button>
+
+        <div class="links">
+          <span>Já tem conta? <a href="#" onclick="mostrarLogin(); return false;">Fazer login</a></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer-note">Apostas Responsáveis</div>
+  <div class="toast" id="toast"></div>
+
+  <script src="scripts/login.js"></script>
+</body>
+</html>
