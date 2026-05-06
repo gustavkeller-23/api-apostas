@@ -33,6 +33,7 @@ public class Main {
         });
 
         servidor.createContext("/cadastro", exchange -> handleCadastro(exchange));
+        servidor.createContext("/login", exchange -> handleLogin(exchange));
 
         servidor.setExecutor(null);
         servidor.start();
@@ -44,6 +45,7 @@ public class Main {
         System.out.println("   PUT    /lutadores/{id}?nome=X&apelido=X&categoria=X&arte=X               → atualiza campos");
         System.out.println("   DELETE /lutadores/{id}                                                    → remove");
         System.out.println("   POST   /cadastro?login=X&senha=X                                         → cadastra usuário");
+        System.out.println("   POST   /login                                                             → autentica usuário");
     }
 
     // ─────────────────────────────────────────────────────────
@@ -169,7 +171,7 @@ public class Main {
     }
 
     // ─────────────────────────────────────────────────────────
-    // POST /cadastro?login=X&senha=X
+    // POST /cadastro
     // ─────────────────────────────────────────────────────────
     private static void handleCadastro(HttpExchange exchange) throws IOException {
         adicionarCorsHeaders(exchange);
@@ -177,19 +179,21 @@ public class Main {
         switch (exchange.getRequestMethod().toUpperCase()) {
 
             case "POST" -> {
-                Map<String, String> params = extrairQueryParams(exchange.getRequestURI());
+                String bodyJson;
+                try (InputStream is = exchange.getRequestBody()) {
+                    bodyJson = new String(is.readAllBytes(), StandardCharsets.UTF_8).trim();
+                }
 
-                String login = params.get("login");
-                String senha = params.get("senha");
+                String login = extrairCampoJson(bodyJson, "usuario");
+                String senha = extrairCampoJson(bodyJson, "senha");
 
                 if (login == null || login.isBlank() ||
                     senha == null || senha.isBlank()) {
-                    responder(exchange, 400, "{\"erro\": \"Campos obrigatórios: login, senha\"}");
+                    responder(exchange, 400, "{\"erro\": \"Campos obrigatórios: usuario, senha\"}");
                     return;
                 }
 
                 try {
-                    // UsuarioDAO faz o hash SHA-256 da senha internamente
                     Usuario novo = new Usuario(login, senha);
                     usuarioDAO.inserir(novo);
                     responder(exchange, 201, novo.toJson());
@@ -198,6 +202,45 @@ public class Main {
                         ? "{\"erro\": \"Usuário já cadastrado\"}"
                         : "{\"erro\": \"Erro interno ao cadastrar usuário\"}";
                     responder(exchange, 409, msg);
+                }
+            }
+
+            case "OPTIONS" -> {
+                adicionarCorsHeaders(exchange);
+                exchange.sendResponseHeaders(204, -1);
+            }
+
+            default -> responder(exchange, 405, "{\"erro\": \"Método não permitido\"}");
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // POST /login
+    // ─────────────────────────────────────────────────────────
+    private static void handleLogin(HttpExchange exchange) throws IOException {
+        adicionarCorsHeaders(exchange);
+
+        switch (exchange.getRequestMethod().toUpperCase()) {
+
+            case "POST" -> {
+                String bodyJson;
+                try (InputStream is = exchange.getRequestBody()) {
+                    bodyJson = new String(is.readAllBytes(), StandardCharsets.UTF_8).trim();
+                }
+
+                String login = extrairCampoJson(bodyJson, "usuario");
+                String senha = extrairCampoJson(bodyJson, "senha");
+
+                if (login == null || login.isBlank() || senha == null || senha.isBlank()) {
+                    responder(exchange, 400, "{\"erro\": \"Campos obrigatórios: usuario, senha\"}");
+                    return;
+                }
+
+                Usuario u = usuarioDAO.autenticar(login, senha);
+                if (u != null) {
+                    responder(exchange, 200, u.toJson());
+                } else {
+                    responder(exchange, 401, "{\"erro\": \"Usuário ou senha incorretos\"}");
                 }
             }
 
@@ -243,6 +286,14 @@ public class Main {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    /** Extrai campo simples de JSON: {"campo":"valor"} */
+    private static String extrairCampoJson(String json, String campo) {
+        if (json == null || campo == null) return null;
+        String pattern = "\"" + campo + "\"\\s*:\\s*\"([^\"]*)\"";
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(pattern).matcher(json);
+        return m.find() ? m.group(1) : null;
     }
 
     private static void responder(HttpExchange exchange, int status, String corpo) throws IOException {
