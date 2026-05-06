@@ -26,6 +26,9 @@ public class UsuarioDAO {
         this.database    = mongoClient.getDatabase(DATABASE_NAME);
         this.collection  = database.getCollection(COLLECTION_NAME);
 
+        // Remove índice antigo de 'email' caso ainda exista no banco (migração)
+        try { collection.dropIndex("email_1"); } catch (Exception ignored) {}
+
         // Garante índice único em login
         collection.createIndex(new Document("login", 1), new IndexOptions().unique(true));
     }

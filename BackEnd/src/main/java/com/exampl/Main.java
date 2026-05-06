@@ -99,10 +99,8 @@ public class Main {
                 }
             }
 
-            case "OPTIONS" -> {
-                adicionarCorsHeaders(exchange);
-                exchange.sendResponseHeaders(204, -1);
-            }
+            // CORS preflight — headers já adicionados no início do método
+            case "OPTIONS" -> exchange.sendResponseHeaders(204, -1);
 
             default -> responder(exchange, 405, "{\"erro\": \"Método não permitido\"}");
         }
@@ -171,10 +169,8 @@ public class Main {
                 }
             }
 
-            case "OPTIONS" -> {
-                adicionarCorsHeaders(exchange);
-                exchange.sendResponseHeaders(204, -1); // sem corpo
-            }
+            // CORS preflight — headers já adicionados no início do método
+            case "OPTIONS" -> exchange.sendResponseHeaders(204, -1);
 
             default -> responder(exchange, 405, "{\"erro\": \"Método não permitido\"}");
         }
@@ -208,17 +204,18 @@ public class Main {
                     usuarioDAO.inserir(novo);
                     responder(exchange, 201, novo.toJson());
                 } catch (Exception e) {
-                    String msg = e.getMessage() != null && e.getMessage().contains("duplicate key")
-                        ? "{\"erro\": \"Usuário já cadastrado\"}"
-                        : "{\"erro\": \"Erro interno ao cadastrar usuário\"}";
-                    responder(exchange, 409, msg);
+                    e.printStackTrace(); // aparece no console do IntelliJ
+                    boolean duplicado = e.getMessage() != null && e.getMessage().contains("duplicate key");
+                    if (duplicado) {
+                        responder(exchange, 409, "{\"erro\": \"Usuário já cadastrado\"}");
+                    } else {
+                        responder(exchange, 500, "{\"erro\": \"Erro interno ao cadastrar usuário\"}");
+                    }
                 }
             }
 
-            case "OPTIONS" -> {
-                adicionarCorsHeaders(exchange);
-                exchange.sendResponseHeaders(204, -1);
-            }
+            // CORS preflight — headers já adicionados no início do método
+            case "OPTIONS" -> exchange.sendResponseHeaders(204, -1);
 
             default -> responder(exchange, 405, "{\"erro\": \"Método não permitido\"}");
         }
@@ -246,18 +243,21 @@ public class Main {
                     return;
                 }
 
-                Usuario u = usuarioDAO.autenticar(login, senha);
-                if (u != null) {
-                    responder(exchange, 200, u.toJson());
-                } else {
-                    responder(exchange, 401, "{\"erro\": \"Usuário ou senha incorretos\"}");
+                try {
+                    Usuario u = usuarioDAO.autenticar(login, senha);
+                    if (u != null) {
+                        responder(exchange, 200, u.toJson());
+                    } else {
+                        responder(exchange, 401, "{\"erro\": \"Usuário ou senha incorretos\"}");
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    responder(exchange, 500, "{\"erro\": \"Erro ao autenticar\"}" );
                 }
             }
 
-            case "OPTIONS" -> {
-                adicionarCorsHeaders(exchange);
-                exchange.sendResponseHeaders(204, -1);
-            }
+            // CORS preflight — headers já adicionados no início do método
+            case "OPTIONS" -> exchange.sendResponseHeaders(204, -1);
 
             default -> responder(exchange, 405, "{\"erro\": \"Método não permitido\"}");
         }
