@@ -82,7 +82,10 @@ public class Main {
                 responder(exchange, 201, novo.toJson());
             }
 
-            case "OPTIONS" -> responder(exchange, 204, "");
+            case "OPTIONS" -> {
+                adicionarCorsHeaders(exchange);
+                exchange.sendResponseHeaders(204, -1); // sem corpo
+            }
 
             default -> responder(exchange, 405, "{\"erro\": \"Método não permitido\"}");
         }
@@ -151,7 +154,10 @@ public class Main {
                 }
             }
 
-            case "OPTIONS" -> responder(exchange, 204, "");
+            case "OPTIONS" -> {
+                adicionarCorsHeaders(exchange);
+                exchange.sendResponseHeaders(204, -1); // sem corpo
+            }
 
             default -> responder(exchange, 405, "{\"erro\": \"Método não permitido\"}");
         }
@@ -193,6 +199,7 @@ public class Main {
     }
 
     private static void responder(HttpExchange exchange, int status, String corpo) throws IOException {
+        adicionarCorsHeaders(exchange); // 👈 GARANTE CORS EM TODAS RESPOSTAS
         try {
             // Criptografamos o corpo da resposta antes de enviar
             String corpoCriptografado = SecurityUtils.encrypt(corpo);

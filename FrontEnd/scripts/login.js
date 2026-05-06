@@ -1,4 +1,4 @@
-const API = 'http://localhost:8080';
+const API = 'http://192.168.1.4:8080';
 
 // ── Toggle senha ──
 function togglePwd(id) {
