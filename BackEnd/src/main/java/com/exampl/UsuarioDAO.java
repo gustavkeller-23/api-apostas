@@ -26,9 +26,8 @@ public class UsuarioDAO {
         this.database    = mongoClient.getDatabase(DATABASE_NAME);
         this.collection  = database.getCollection(COLLECTION_NAME);
 
-        // Garante índice único em login e email
+        // Garante índice único em login
         collection.createIndex(new Document("login", 1), new IndexOptions().unique(true));
-        collection.createIndex(new Document("email", 1), new IndexOptions().unique(true));
     }
 
     // ──────────────────────────────────────────────
@@ -61,16 +60,12 @@ public class UsuarioDAO {
     // ──────────────────────────────────────────────
     public Usuario inserir(Usuario usuario) {
         usuario.setId(gerarId());
-        usuario.setSenhaHash(hashSenha(usuario.getSenhaHash())); // recebe senha plana, salva hash
+        usuario.setSenhaHash(hashSenha(usuario.getSenhaHash()));
 
         Document doc = new Document()
             .append("id",        usuario.getId())
             .append("login",     usuario.getLogin())
-            .append("senhaHash", usuario.getSenhaHash())
-            .append("email",     usuario.getEmail())
-            .append("role",      usuario.getRole())
-            .append("ativo",     usuario.isAtivo())
-            .append("criadoEm",  usuario.getCriadoEm());
+            .append("senhaHash", usuario.getSenhaHash());
 
         collection.insertOne(doc);
         return usuario;
@@ -84,9 +79,8 @@ public class UsuarioDAO {
 
         Document doc = collection.find(
             Filters.and(
-                Filters.eq("login", login),
-                Filters.eq("senhaHash", hash),
-                Filters.eq("ativo", true)
+                Filters.eq("login",     login),
+                Filters.eq("senhaHash", hash)
             )
         ).first();
 
@@ -125,9 +119,7 @@ public class UsuarioDAO {
     // ──────────────────────────────────────────────
     public boolean atualizar(int id, Usuario usuario) {
         Document update = new Document("$set", new Document()
-            .append("email", usuario.getEmail())
-            .append("role",  usuario.getRole())
-            .append("ativo", usuario.isAtivo())
+            .append("login", usuario.getLogin())
         );
 
         return collection.updateOne(Filters.eq("id", id), update)
@@ -165,13 +157,9 @@ public class UsuarioDAO {
     // ──────────────────────────────────────────────
     private Usuario documentParaUsuario(Document doc) {
         return new Usuario(
-            doc.getInteger("id",    0),
+            doc.getInteger("id",  0),
             doc.getString("login"),
-            doc.getString("senhaHash"),
-            doc.getString("email"),
-            doc.getString("role"),
-            doc.getBoolean("ativo",  true),
-            doc.getString("criadoEm")
+            doc.getString("senhaHash")
         );
     }
 

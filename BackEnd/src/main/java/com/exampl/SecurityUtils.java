@@ -4,6 +4,8 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Base64;
 
 public class SecurityUtils {
@@ -18,26 +20,34 @@ public class SecurityUtils {
     private static final String CHAVE_MESTRA = "12345678901234567890123456789012";
 
     public static String encrypt(String strToEncrypt) throws Exception {
-        byte[] iv = new byte[IV_SIZE]; // Em produção, use SecureRandom para gerar o IV
-        //usando IV fixo
+        // IV aleatório a cada chamada — obrigatório em AES-GCM para evitar quebra de segurança
+        byte[] iv = new byte[IV_SIZE];
+        new SecureRandom().nextBytes(iv);
+
         SecretKeySpec secretKey = new SecretKeySpec(CHAVE_MESTRA.getBytes(StandardCharsets.UTF_8), ALGORITHM);
         Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-        GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(TAG_LENGTH_BIT, iv);
-
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmParameterSpec);
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, new GCMParameterSpec(TAG_LENGTH_BIT, iv));
         byte[] cipherText = cipher.doFinal(strToEncrypt.getBytes(StandardCharsets.UTF_8));
 
-        return Base64.getEncoder().encodeToString(cipherText);
+        // Formato final: Base64( IV[12 bytes] ++ cipherText ++ authTag[16 bytes] )
+        byte[] payload = new byte[IV_SIZE + cipherText.length];
+        System.arraycopy(iv,         0, payload, 0,       IV_SIZE);
+        System.arraycopy(cipherText, 0, payload, IV_SIZE, cipherText.length);
+
+        return Base64.getEncoder().encodeToString(payload);
     }
 
     public static String decrypt(String strToDecrypt) throws Exception {
-        byte[] iv = new byte[IV_SIZE];
+        byte[] payload = Base64.getDecoder().decode(strToDecrypt);
+
+        // Extrai o IV dos primeiros 12 bytes e o ciphertext do restante
+        byte[] iv         = Arrays.copyOfRange(payload, 0,       IV_SIZE);
+        byte[] cipherText = Arrays.copyOfRange(payload, IV_SIZE, payload.length);
+
         SecretKeySpec secretKey = new SecretKeySpec(CHAVE_MESTRA.getBytes(StandardCharsets.UTF_8), ALGORITHM);
         Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-        GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(TAG_LENGTH_BIT, iv);
-
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmParameterSpec);
-        byte[] plainText = cipher.doFinal(Base64.getDecoder().decode(strToDecrypt));
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(TAG_LENGTH_BIT, iv));
+        byte[] plainText = cipher.doFinal(cipherText);
 
         return new String(plainText, StandardCharsets.UTF_8);
     }

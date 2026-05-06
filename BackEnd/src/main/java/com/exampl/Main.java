@@ -10,11 +10,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Main {
 
-    private static final int  PORTA = 8080;
-    private static LutadorDAO dao   = new LutadorDAO();
+    private static final int  PORTA       = 8080;
+    private static LutadorDAO dao         = new LutadorDAO();
+    private static UsuarioDAO usuarioDAO  = new UsuarioDAO();
 
     public static void main(String[] args) throws IOException {
 
@@ -30,15 +32,18 @@ public class Main {
             }
         });
 
+        servidor.createContext("/cadastro", exchange -> handleCadastro(exchange));
+
         servidor.setExecutor(null);
         servidor.start();
 
         System.out.println("✅ Servidor rodando em http://localhost:" + PORTA);
-        System.out.println("   GET    /lutadores                                             → lista todos");
-        System.out.println("   POST   /lutadores?nome=X&apelido=X&categoria=X&arte=X        → cria lutador");
-        System.out.println("   GET    /lutadores/{id}                                        → busca por ID");
-        System.out.println("   PUT    /lutadores/{id}?nome=X&apelido=X&categoria=X&arte=X   → atualiza campos");
-        System.out.println("   DELETE /lutadores/{id}                                        → remove");
+        System.out.println("   GET    /lutadores                                                         → lista todos");
+        System.out.println("   POST   /lutadores?nome=X&apelido=X&categoria=X&arte=X                    → cria lutador");
+        System.out.println("   GET    /lutadores/{id}                                                    → busca por ID");
+        System.out.println("   PUT    /lutadores/{id}?nome=X&apelido=X&categoria=X&arte=X               → atualiza campos");
+        System.out.println("   DELETE /lutadores/{id}                                                    → remove");
+        System.out.println("   POST   /cadastro?login=X&senha=X                                         → cadastra usuário");
     }
 
     // ─────────────────────────────────────────────────────────
@@ -82,7 +87,10 @@ public class Main {
                 responder(exchange, 201, novo.toJson());
             }
 
-            case "OPTIONS" -> responder(exchange, 204, "");
+            case "OPTIONS" -> {
+                adicionarCorsHeaders(exchange);
+                exchange.sendResponseHeaders(204, -1); // sem corpo
+            }
 
             default -> responder(exchange, 405, "{\"erro\": \"Método não permitido\"}");
         }
@@ -151,7 +159,52 @@ public class Main {
                 }
             }
 
-            case "OPTIONS" -> responder(exchange, 204, "");
+            case "OPTIONS" -> {
+                adicionarCorsHeaders(exchange);
+                exchange.sendResponseHeaders(204, -1); // sem corpo
+            }
+
+            default -> responder(exchange, 405, "{\"erro\": \"Método não permitido\"}");
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // POST /cadastro?login=X&senha=X
+    // ─────────────────────────────────────────────────────────
+    private static void handleCadastro(HttpExchange exchange) throws IOException {
+        adicionarCorsHeaders(exchange);
+
+        switch (exchange.getRequestMethod().toUpperCase()) {
+
+            case "POST" -> {
+                Map<String, String> params = extrairQueryParams(exchange.getRequestURI());
+
+                String login = params.get("login");
+                String senha = params.get("senha");
+
+                if (login == null || login.isBlank() ||
+                    senha == null || senha.isBlank()) {
+                    responder(exchange, 400, "{\"erro\": \"Campos obrigatórios: login, senha\"}");
+                    return;
+                }
+
+                try {
+                    // UsuarioDAO faz o hash SHA-256 da senha internamente
+                    Usuario novo = new Usuario(login, senha);
+                    usuarioDAO.inserir(novo);
+                    responder(exchange, 201, novo.toJson());
+                } catch (Exception e) {
+                    String msg = e.getMessage() != null && e.getMessage().contains("duplicate key")
+                        ? "{\"erro\": \"Usuário já cadastrado\"}"
+                        : "{\"erro\": \"Erro interno ao cadastrar usuário\"}";
+                    responder(exchange, 409, msg);
+                }
+            }
+
+            case "OPTIONS" -> {
+                adicionarCorsHeaders(exchange);
+                exchange.sendResponseHeaders(204, -1);
+            }
 
             default -> responder(exchange, 405, "{\"erro\": \"Método não permitido\"}");
         }
@@ -193,6 +246,7 @@ public class Main {
     }
 
     private static void responder(HttpExchange exchange, int status, String corpo) throws IOException {
+        adicionarCorsHeaders(exchange); // 👈 GARANTE CORS EM TODAS RESPOSTAS
         try {
             // Criptografamos o corpo da resposta antes de enviar
             String corpoCriptografado = SecurityUtils.encrypt(corpo);
@@ -217,6 +271,7 @@ public class Main {
     private static void adicionarCorsHeaders(HttpExchange exchange) {
         exchange.getResponseHeaders().set("Access-Control-Allow-Origin",  "*");
         exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, X-Content-Encrypted");
+        exchange.getResponseHeaders().set("Access-Control-Expose-Headers", "X-Content-Encrypted"); // permite JS ler o header
     }
 }

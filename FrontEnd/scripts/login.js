@@ -1,4 +1,4 @@
-const API = 'http://localhost:8080';
+const API = 'http://192.168.1.4:8080';
 
 // ── Toggle senha ──
 function togglePwd(id) {
@@ -21,7 +21,7 @@ function mostrarLogin() {
 // ── Login ──
 async function fazerLogin() {
   const usuario = document.getElementById('loginUsuario').value.trim();
-  const senha   = document.getElementById('pwdInput').value;
+  const senha = document.getElementById('pwdInput').value;
 
   if (!usuario || !senha) {
     showToast('Preencha usuário e senha!', 'erro');
@@ -51,8 +51,8 @@ async function fazerLogin() {
 // ── Criar conta ──
 async function criarConta() {
   const usuario = document.getElementById('cadUsuario').value.trim();
-  const senha   = document.getElementById('cadSenha').value;
-  const conf    = document.getElementById('cadSenhaConf').value;
+  const senha = document.getElementById('cadSenha').value;
+  const conf = document.getElementById('cadSenhaConf').value;
 
   if (!usuario || !senha || !conf) {
     showToast('Preencha todos os campos!', 'erro');
