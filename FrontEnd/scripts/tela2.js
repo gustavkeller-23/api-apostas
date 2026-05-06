@@ -1,28 +1,28 @@
 const API = 'http://192.168.1.4:8080';
- 
+
 // ── Dados ──
 const artes = { '1': 'Boxe', '2': 'Karatê', '3': 'Muay Thai' };
-let lutadores  = [];
+let lutadores = [];
 let editandoId = null;
- 
+
 // ── Inicialização ──
 document.addEventListener('DOMContentLoaded', async () => {
   await carregarLutadores();
- 
+
   // Tabs
   document.querySelectorAll('.tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-      if (btn.dataset.tab === 'listar')  renderTabela();
+      if (btn.dataset.tab === 'listar') renderTabela();
       if (btn.dataset.tab === 'remover') renderSelectRemover();
     });
   });
- 
+
   // Select remover: preview ao mudar
   document.getElementById('selectRemover').addEventListener('change', function () {
-    const l   = lutadores.find(x => x.id === this.value);
+    const l = lutadores.find(x => String(x.id) === this.value);
     const box = document.getElementById('preview-remover');
     if (!l) { box.style.display = 'none'; return; }
     box.style.display = 'block';
@@ -34,13 +34,42 @@ document.addEventListener('DOMContentLoaded', async () => {
       <div class="preview-row"><span>Arte:</span><strong>${artes[l.arte]}</strong></div>`;
   });
 });
- 
+
+// ── Criptografia: AES-256-GCM (Web Crypto API) ──
+// Deve ser idêntica à CHAVE_MESTRA do SecurityUtils.java
+const CHAVE_HEX = '3132333435363738393031323334353637383930313233343536373839303132';
+
+async function getChave() {
+  const keyBytes = hexToBytes(CHAVE_HEX);
+  return crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['decrypt']);
+}
+
+function hexToBytes(hex) {
+  const arr = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < arr.length; i++)
+    arr[i] = parseInt(hex.substr(i * 2, 2), 16);
+  return arr;
+}
+
+// Descriptografa a resposta do servidor (Base64 → IV[12] + ciphertext → JSON)
+async function decryptResponse(res) {
+  const b64 = await res.text();
+  const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const iv = raw.slice(0, 12);
+  const ciphertext = raw.slice(12);
+  const chave = await getChave();
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, chave, ciphertext);
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+
 // ── Carregar lutadores da API ──
 async function carregarLutadores() {
   try {
     const res = await fetch(`${API}/lutadores`);
     if (res.ok) {
-      lutadores = await res.json();
+      // Resposta é criptografada — descriptografar antes de usar
+      lutadores = await decryptResponse(res);
+      renderTabela();
     } else {
       showToast('Erro ao carregar lutadores!', 'erro');
     }
@@ -49,61 +78,59 @@ async function carregarLutadores() {
     console.error(err);
   }
 }
- 
+
 // ── Cadastrar / Salvar edição ──
 async function cadastrarLutador() {
-  const id      = document.getElementById('inputId').value.trim();
-  const nome    = document.getElementById('inputNome').value.trim();
-  const cat     = document.getElementById('inputCategoria').value;
+  const id = document.getElementById('inputId').value.trim();
+  const nome = document.getElementById('inputNome').value.trim();
+  const cat = document.getElementById('inputCategoria').value;
   const apelido = document.getElementById('inputApelido').value.trim();
-  const arte    = document.getElementById('inputArte').value;
- 
+  const arte = document.getElementById('inputArte').value;
+
   if (!id || !nome || !cat || !apelido || !arte) {
     showToast('Preencha todos os campos!', 'erro');
     return;
   }
- 
-  const payload = { id, nome, categoria: cat, apelido, arte };
- 
+
   try {
     if (editandoId) {
-      // ── Modo edição: PUT /lutadores/:id ──
-      const res = await fetch(`${API}/lutadores/${editandoId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      // ── Modo edição: PUT /lutadores/:id?nome=X&apelido=X&categoria=X&arte=X ──
+      // Backend lê query params na URL, não o body JSON
+      const qs = new URLSearchParams({ nome, apelido, categoria: cat, arte }).toString();
+      const res = await fetch(`${API}/lutadores/${editandoId}?${qs}`, {
+        method: 'PUT'
       });
- 
+
       if (res.ok) {
         await carregarLutadores();
         cancelarEdicao();
         showToast('Lutador atualizado com sucesso!', 'ok');
- 
+
         // Volta para aba listar
         document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
         document.querySelector('[data-tab="listar"]').classList.add('active');
         document.getElementById('tab-listar').classList.add('active');
         renderTabela();
       } else {
-        const dados = await res.json().catch(() => ({}));
-        showToast(dados.mensagem || 'Erro ao atualizar lutador!', 'erro');
+        const dados = await decryptResponse(res).catch(() => ({}));
+        showToast(dados.erro || 'Erro ao atualizar lutador!', 'erro');
       }
- 
+
     } else {
-      // ── Modo cadastro: POST /lutadores ──
-      const res = await fetch(`${API}/lutadores`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      // ── Modo cadastro: POST /lutadores?nome=X&apelido=X&categoria=X&arte=X ──
+      // Backend lê query params na URL, não o body JSON
+      const qs = new URLSearchParams({ id, nome, apelido, categoria: cat, arte }).toString();
+      const res = await fetch(`${API}/lutadores?${qs}`, {
+        method: 'POST'
       });
- 
+
       if (res.ok) {
         await carregarLutadores();
         limparForm();
         showToast('Lutador cadastrado com sucesso!', 'ok');
       } else {
-        const dados = await res.json().catch(() => ({}));
-        showToast(dados.mensagem || 'Erro ao cadastrar lutador!', 'erro');
+        const dados = await decryptResponse(res).catch(() => ({}));
+        showToast(dados.erro || 'Erro ao cadastrar lutador!', 'erro');
       }
     }
   } catch (err) {
@@ -111,57 +138,57 @@ async function cadastrarLutador() {
     console.error(err);
   }
 }
- 
+
 function limparForm() {
   ['inputId', 'inputNome', 'inputApelido'].forEach(i => document.getElementById(i).value = '');
   document.getElementById('inputCategoria').value = '';
   document.getElementById('inputArte').value = '';
 }
- 
+
 // ── Editar ──
 function editarLutador(id) {
-  const l = lutadores.find(x => x.id === id);
+  const l = lutadores.find(x => String(x.id) === String(id));
   if (!l) return;
- 
-  editandoId = id;
- 
+
+  editandoId = l.id; // usa o id numérico do objeto
+
   document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
   document.querySelector('[data-tab="cadastrar"]').classList.add('active');
   document.getElementById('tab-cadastrar').classList.add('active');
- 
-  document.getElementById('inputId').value        = l.id;
-  document.getElementById('inputId').disabled     = true;
-  document.getElementById('inputNome').value      = l.nome;
+
+  document.getElementById('inputId').value = l.id;
+  document.getElementById('inputId').disabled = true;
+  document.getElementById('inputNome').value = l.nome;
   document.getElementById('inputCategoria').value = l.categoria;
-  document.getElementById('inputApelido').value   = l.apelido;
-  document.getElementById('inputArte').value      = l.arte;
- 
-  document.getElementById('form-titulo').textContent      = 'EDITAR LUTADOR';
-  document.getElementById('btn-principal').textContent    = 'SALVAR ALTERAÇÕES';
+  document.getElementById('inputApelido').value = l.apelido;
+  document.getElementById('inputArte').value = l.arte;
+
+  document.getElementById('form-titulo').textContent = 'EDITAR LUTADOR';
+  document.getElementById('btn-principal').textContent = 'SALVAR ALTERAÇÕES';
   document.getElementById('btn-principal').classList.add('editando');
-  document.getElementById('btn-cancelar').style.display  = 'block';
+  document.getElementById('btn-cancelar').style.display = 'block';
 }
- 
+
 function cancelarEdicao() {
   editandoId = null;
   document.getElementById('inputId').disabled = false;
-  document.getElementById('form-titulo').textContent     = 'NOVO CADASTRO DE LUTADOR';
-  document.getElementById('btn-principal').textContent   = 'CADASTRAR LUTADOR';
+  document.getElementById('form-titulo').textContent = 'NOVO CADASTRO DE LUTADOR';
+  document.getElementById('btn-principal').textContent = 'CADASTRAR LUTADOR';
   document.getElementById('btn-principal').classList.remove('editando');
   document.getElementById('btn-cancelar').style.display = 'none';
   limparForm();
 }
- 
+
 // ── Listar ──
 function renderTabela() {
   const tbody = document.getElementById('tabela-lutadores');
   document.getElementById('badge-total').textContent = lutadores.length;
- 
+
   if (!lutadores.length) {
     tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Nenhum lutador cadastrado ainda.</td></tr>';
     return;
   }
- 
+
   tbody.innerHTML = lutadores.map(l => `
     <tr>
       <td><span class="tag">${l.id}</span></td>
@@ -179,7 +206,7 @@ function renderTabela() {
       </td>
     </tr>`).join('');
 }
- 
+
 // ── Remover ──
 function renderSelectRemover() {
   const sel = document.getElementById('selectRemover');
@@ -187,32 +214,32 @@ function renderSelectRemover() {
     lutadores.map(l => `<option value="${l.id}">${l.id} – ${l.nome}</option>`).join('');
   document.getElementById('preview-remover').style.display = 'none';
 }
- 
+
 async function removerLutador() {
   const id = document.getElementById('selectRemover').value;
   if (!id) { showToast('Selecione um lutador!', 'erro'); return; }
   await removerPorId(id);
   renderSelectRemover();
 }
- 
+
 async function removerPorId(id) {
   try {
     const res = await fetch(`${API}/lutadores/${id}`, { method: 'DELETE' });
- 
+
     if (res.ok) {
       await carregarLutadores();
       renderTabela();
       showToast('Lutador removido!', 'ok');
     } else {
-      const dados = await res.json().catch(() => ({}));
-      showToast(dados.mensagem || 'Erro ao remover lutador!', 'erro');
+      const dados = await decryptResponse(res).catch(() => ({}));
+      showToast(dados.erro || 'Erro ao remover lutador!', 'erro');
     }
   } catch (err) {
     showToast('Erro ao conectar com o servidor!', 'erro');
     console.error(err);
   }
 }
- 
+
 // ── Toast ──
 function showToast(msg, tipo) {
   const t = document.getElementById('toast');
