@@ -44,7 +44,7 @@ public class Lutador {
  
     public String toJson() {
         return String.format(
-            "{\"id\": %d, \"nome\": \"%s\", \"categoria\": %d, \"apelido\": \"%s\", \"arte\": %d}",
+            "{\"id\": %d, \"nome\": \"%s\", \"categoria\": \"%s\", \"apelido\": \"%s\", \"arte\": \"%s\"}",
             id, nome, categoria, apelido, arte
         );
     }

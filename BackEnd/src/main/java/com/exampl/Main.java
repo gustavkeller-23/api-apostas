@@ -57,24 +57,29 @@ public class Main {
         switch (exchange.getRequestMethod().toUpperCase()) {
 
             case "GET" -> {
-                List<Lutador> lista = dao.listarTodos();
+                try {
+                    List<Lutador> lista = dao.listarTodos();
 
-                StringBuilder sb = new StringBuilder("[");
-                for (int i = 0; i < lista.size(); i++) {
-                    sb.append(lista.get(i).toJson());
-                    if (i < lista.size() - 1) sb.append(",");
+                    StringBuilder sb = new StringBuilder("[");
+                    for (int i = 0; i < lista.size(); i++) {
+                        sb.append(lista.get(i).toJson());
+                        if (i < lista.size() - 1) sb.append(",");
+                    }
+                    sb.append("]");
+
+                    responder(exchange, 200, sb.toString());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    responder(exchange, 500, "{\"erro\": \"Erro ao acessar o banco de dados: \" + e.getMessage()}");
                 }
-                sb.append("]");
-
-                responder(exchange, 200, sb.toString());
             }
 
             // POST /lutadores?nome=X&apelido=X&categoria=X&arte=X
             case "POST" -> {
                 Map<String, String> params = extrairQueryParams(exchange.getRequestURI());
 
-                String  nome      = params.get("nome");
-                String  apelido   = params.get("apelido");
+                String nome      = params.get("nome");
+                String apelido   = params.get("apelido");
                 String categoria = params.get("categoria");
                 String arte      = params.get("arte");
 
@@ -85,13 +90,18 @@ public class Main {
                     arte      != null ? arte      : ""
                 );
 
-                dao.inserir(novo);
-                responder(exchange, 201, novo.toJson());
+                try {
+                    dao.inserir(novo);
+                    responder(exchange, 201, novo.toJson());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    responder(exchange, 500, "{\"erro\": \"Erro ao inserir no banco de dados\"}");
+                }
             }
 
             case "OPTIONS" -> {
                 adicionarCorsHeaders(exchange);
-                exchange.sendResponseHeaders(204, -1); // sem corpo
+                exchange.sendResponseHeaders(204, -1);
             }
 
             default -> responder(exchange, 405, "{\"erro\": \"Método não permitido\"}");
