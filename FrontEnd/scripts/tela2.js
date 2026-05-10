@@ -5,8 +5,114 @@ const artes = { '1': 'Boxe', '2': 'Karatê', '3': 'Muay Thai' };
 let lutadores = [];
 let editandoId = null;
 
+// ── Criptografia RSA-OAEP (Web Crypto API) ──
+// Par de chaves gerado uma vez por sessão de browser
+let rsaPrivateKey = null;
+let rsaPublicKey  = null;
+let handshakeDone = false;
+
+/**
+ * Gera um par de chaves RSA-OAEP 2048 bits.
+ * Usa SHA-256 para hash e MGF1 — igual à configuração do SecurityUtils.java.
+ */
+async function gerarParDeChaves() {
+  const keyPair = await crypto.subtle.generateKey(
+    {
+      name: 'RSA-OAEP',
+      modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: 'SHA-256',
+    },
+    true,        // exportável
+    ['encrypt', 'decrypt']
+  );
+  rsaPrivateKey = keyPair.privateKey;
+  rsaPublicKey  = keyPair.publicKey;
+}
+
+/**
+ * Exporta a chave pública no formato SPKI (Base64) e envia ao servidor.
+ * O servidor armazenará essa chave para criptografar todas as respostas seguintes.
+ */
+async function realizarHandshake() {
+  if (handshakeDone) return;
+
+  await gerarParDeChaves();
+
+  // Exporta a chave pública como SPKI (SubjectPublicKeyInfo) em Base64
+  const spki   = await crypto.subtle.exportKey('spki', rsaPublicKey);
+  const base64  = btoa(String.fromCharCode(...new Uint8Array(spki)));
+
+  const res = await fetch(`${API}/handshake`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ publicKey: base64 })
+  });
+
+  if (!res.ok) {
+    throw new Error(`Handshake falhou: HTTP ${res.status}`);
+  }
+
+  handshakeDone = true;
+  console.log('🔑 Handshake RSA realizado com sucesso.');
+}
+
+/**
+ * Descriptografa a resposta do servidor.
+ *
+ * O servidor retorna um JSON array de chunks RSA criptografados:
+ *   ["base64chunk1", "base64chunk2", ...]
+ *
+ * Cada chunk é descriptografado individualmente com a privateKey RSA
+ * e os bytes são concatenados → UTF-8 → JSON.parse.
+ */
+async function decryptResponse(res) {
+  const encrypted = res.headers.get('X-Content-Encrypted');
+
+  // Fallback: se servidor não criptografou (handshake não feito ainda)
+  if (encrypted === 'false' || encrypted === null) {
+    return res.json();
+  }
+
+  const chunksJson = await res.text();
+
+  // Parse do array de strings Base64
+  let chunks;
+  try {
+    chunks = JSON.parse(chunksJson);
+  } catch {
+    throw new Error('Resposta criptografada inválida (não é JSON array).');
+  }
+
+  if (!Array.isArray(chunks)) {
+    throw new Error('Formato inesperado: esperado JSON array de chunks.');
+  }
+
+  // Descriptografa cada chunk e concatena os bytes
+  const allBytes = [];
+  for (const chunk of chunks) {
+    const cipherBytes = Uint8Array.from(atob(chunk), c => c.charCodeAt(0));
+    const plainBuffer = await crypto.subtle.decrypt(
+      { name: 'RSA-OAEP' },
+      rsaPrivateKey,
+      cipherBytes
+    );
+    allBytes.push(...new Uint8Array(plainBuffer));
+  }
+
+  const plainText = new TextDecoder().decode(new Uint8Array(allBytes));
+  return JSON.parse(plainText);
+}
+
 // ── Inicialização ──
 document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    await realizarHandshake();
+  } catch (err) {
+    showToast('Erro no handshake de segurança!', 'erro');
+    console.error(err);
+  }
+
   await carregarLutadores();
 
   // Tabs
@@ -35,39 +141,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-// ── Criptografia: AES-256-GCM (Web Crypto API) ──
-// Deve ser idêntica à CHAVE_MESTRA do SecurityUtils.java
-const CHAVE_HEX = '3132333435363738393031323334353637383930313233343536373839303132';
-
-async function getChave() {
-  const keyBytes = hexToBytes(CHAVE_HEX);
-  return crypto.subtle.importKey('raw', keyBytes, { name: 'AES-GCM' }, false, ['decrypt']);
-}
-
-function hexToBytes(hex) {
-  const arr = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < arr.length; i++)
-    arr[i] = parseInt(hex.substr(i * 2, 2), 16);
-  return arr;
-}
-
-// Descriptografa a resposta do servidor (Base64 → IV[12] + ciphertext → JSON)
-async function decryptResponse(res) {
-  const b64 = await res.text();
-  const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-  const iv = raw.slice(0, 12);
-  const ciphertext = raw.slice(12);
-  const chave = await getChave();
-  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, chave, ciphertext);
-  return JSON.parse(new TextDecoder().decode(plain));
-}
-
 // ── Carregar lutadores da API ──
 async function carregarLutadores() {
   try {
     const res = await fetch(`${API}/lutadores`);
     if (res.ok) {
-      // Resposta é criptografada — descriptografar antes de usar
       lutadores = await decryptResponse(res);
       renderTabela();
     } else {
@@ -81,11 +159,11 @@ async function carregarLutadores() {
 
 // ── Cadastrar / Salvar edição ──
 async function cadastrarLutador() {
-  const id = document.getElementById('inputId').value.trim();
-  const nome = document.getElementById('inputNome').value.trim();
-  const cat = document.getElementById('inputCategoria').value;
+  const id      = document.getElementById('inputId').value.trim();
+  const nome    = document.getElementById('inputNome').value.trim();
+  const cat     = document.getElementById('inputCategoria').value;
   const apelido = document.getElementById('inputApelido').value.trim();
-  const arte = document.getElementById('inputArte').value;
+  const arte    = document.getElementById('inputArte').value;
 
   if (!id || !nome || !cat || !apelido || !arte) {
     showToast('Preencha todos os campos!', 'erro');
@@ -95,18 +173,14 @@ async function cadastrarLutador() {
   try {
     if (editandoId) {
       // ── Modo edição: PUT /lutadores/:id?nome=X&apelido=X&categoria=X&arte=X ──
-      // Backend lê query params na URL, não o body JSON
-      const qs = new URLSearchParams({ nome, apelido, categoria: cat, arte }).toString();
-      const res = await fetch(`${API}/lutadores/${editandoId}?${qs}`, {
-        method: 'PUT'
-      });
+      const qs  = new URLSearchParams({ nome, apelido, categoria: cat, arte }).toString();
+      const res = await fetch(`${API}/lutadores/${editandoId}?${qs}`, { method: 'PUT' });
 
       if (res.ok) {
         await carregarLutadores();
         cancelarEdicao();
         showToast('Lutador atualizado com sucesso!', 'ok');
 
-        // Volta para aba listar
         document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
         document.querySelector('[data-tab="listar"]').classList.add('active');
         document.getElementById('tab-listar').classList.add('active');
@@ -117,12 +191,9 @@ async function cadastrarLutador() {
       }
 
     } else {
-      // ── Modo cadastro: POST /lutadores?nome=X&apelido=X&categoria=X&arte=X ──
-      // Backend lê query params na URL, não o body JSON
-      const qs = new URLSearchParams({ id, nome, apelido, categoria: cat, arte }).toString();
-      const res = await fetch(`${API}/lutadores?${qs}`, {
-        method: 'POST'
-      });
+      // ── Modo cadastro: POST /lutadores?id=X&nome=X&apelido=X&categoria=X&arte=X ──
+      const qs  = new URLSearchParams({ id, nome, apelido, categoria: cat, arte }).toString();
+      const res = await fetch(`${API}/lutadores?${qs}`, { method: 'POST' });
 
       if (res.ok) {
         await carregarLutadores();
@@ -150,30 +221,30 @@ function editarLutador(id) {
   const l = lutadores.find(x => String(x.id) === String(id));
   if (!l) return;
 
-  editandoId = l.id; // usa o id numérico do objeto
+  editandoId = l.id;
 
   document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
   document.querySelector('[data-tab="cadastrar"]').classList.add('active');
   document.getElementById('tab-cadastrar').classList.add('active');
 
-  document.getElementById('inputId').value = l.id;
-  document.getElementById('inputId').disabled = true;
-  document.getElementById('inputNome').value = l.nome;
+  document.getElementById('inputId').value        = l.id;
+  document.getElementById('inputId').disabled     = true;
+  document.getElementById('inputNome').value      = l.nome;
   document.getElementById('inputCategoria').value = l.categoria;
-  document.getElementById('inputApelido').value = l.apelido;
-  document.getElementById('inputArte').value = l.arte;
+  document.getElementById('inputApelido').value   = l.apelido;
+  document.getElementById('inputArte').value      = l.arte;
 
-  document.getElementById('form-titulo').textContent = 'EDITAR LUTADOR';
-  document.getElementById('btn-principal').textContent = 'SALVAR ALTERAÇÕES';
+  document.getElementById('form-titulo').textContent       = 'EDITAR LUTADOR';
+  document.getElementById('btn-principal').textContent     = 'SALVAR ALTERAÇÕES';
   document.getElementById('btn-principal').classList.add('editando');
-  document.getElementById('btn-cancelar').style.display = 'block';
+  document.getElementById('btn-cancelar').style.display   = 'block';
 }
 
 function cancelarEdicao() {
   editandoId = null;
   document.getElementById('inputId').disabled = false;
-  document.getElementById('form-titulo').textContent = 'NOVO CADASTRO DE LUTADOR';
-  document.getElementById('btn-principal').textContent = 'CADASTRAR LUTADOR';
+  document.getElementById('form-titulo').textContent     = 'NOVO CADASTRO DE LUTADOR';
+  document.getElementById('btn-principal').textContent   = 'CADASTRAR LUTADOR';
   document.getElementById('btn-principal').classList.remove('editando');
   document.getElementById('btn-cancelar').style.display = 'none';
   limparForm();
