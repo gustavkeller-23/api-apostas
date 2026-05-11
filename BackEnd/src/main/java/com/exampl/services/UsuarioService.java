@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import com.exampl.model.Usuario;
 import com.exampl.repository.UsuarioDAO;
 import com.exampl.util.Responses;
+import com.exampl.util.SecurityUtils;
 import com.exampl.util.Utils;
 import com.sun.net.httpserver.HttpExchange;
 
@@ -19,7 +20,19 @@ public class UsuarioService {
     public void cadastrar(HttpExchange exchange) throws IOException{
         String bodyJson;
         try (InputStream is = exchange.getRequestBody()) {
-            bodyJson = new String(is.readAllBytes(), StandardCharsets.UTF_8).trim();
+            String rawBody = new String(is.readAllBytes(), StandardCharsets.UTF_8).trim();
+            // Se o body for um array JSON (dados criptografados), descriptografa
+            // Caso contrário usa o body diretamente (compatibilidade com Postman sem criptografia)
+            if (rawBody.startsWith("[")) {
+                try {
+                    bodyJson = SecurityUtils.decryptWithServerPrivateKey(rawBody);
+                } catch (Exception e) {
+                    response.responder(exchange, 400, "{\"erro\": \"Falha ao descriptografar dados\"}" );
+                    return;
+                }
+            } else {
+                bodyJson = rawBody;
+            }
         }
 
         String login = utils.extrairCampoJson(bodyJson, "usuario");
@@ -49,7 +62,19 @@ public class UsuarioService {
     public void autenticar(HttpExchange exchange) throws IOException{
         String bodyJson;
         try (InputStream is = exchange.getRequestBody()) {
-            bodyJson = new String(is.readAllBytes(), StandardCharsets.UTF_8).trim();
+            String rawBody = new String(is.readAllBytes(), StandardCharsets.UTF_8).trim();
+            // Se o body for um array JSON (dados criptografados), descriptografa
+            // Caso contrário usa o body diretamente (compatibilidade com Postman sem criptografia)
+            if (rawBody.startsWith("[")) {
+                try {
+                    bodyJson = SecurityUtils.decryptWithServerPrivateKey(rawBody);
+                } catch (Exception e) {
+                    response.responder(exchange, 400, "{\"erro\": \"Falha ao descriptografar dados\"}" );
+                    return;
+                }
+            } else {
+                bodyJson = rawBody;
+            }
         }
 
         String login = utils.extrairCampoJson(bodyJson, "usuario");

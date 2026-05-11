@@ -1,62 +1,108 @@
 const API = 'http://localhost:8080';
 
-// ── Criptografia RSA-OAEP (Web Crypto API) ──
+// ── Chave pública do SERVIDOR (buscada ao carregar a página) ──
+// Usada para criptografar login/senha antes de enviar
+let servidorPublicKey = null;
+
+// ── Chave privada do BROWSER (para descriptografar respostas) ──
 let rsaPrivateKey = null;
 let rsaPublicKey  = null;
 let handshakeDone = false;
 
-async function gerarParDeChaves() {
-  const keyPair = await crypto.subtle.generateKey(
-    {
-      name: 'RSA-OAEP',
-      modulusLength: 2048,
-      publicExponent: new Uint8Array([1, 0, 1]),
-      hash: 'SHA-256',
-    },
-    true,
-    ['encrypt', 'decrypt']
+// ─────────────────────────────────────────────────────────────
+// 1. Busca a chave pública RSA do servidor
+// ─────────────────────────────────────────────────────────────
+async function buscarChaveServidor() {
+  const res = await fetch(`${API}/chave-publica`);
+  if (!res.ok) throw new Error('Não foi possível buscar a chave pública do servidor.');
+
+  const dados = await res.json();
+  const keyBytes = Uint8Array.from(atob(dados.publicKey), c => c.charCodeAt(0));
+
+  servidorPublicKey = await crypto.subtle.importKey(
+    'spki',
+    keyBytes,
+    { name: 'RSA-OAEP', hash: 'SHA-256' },
+    false,
+    ['encrypt']   // browser só criptografa com ela, nunca descriptografa
   );
-  rsaPrivateKey = keyPair.privateKey;
-  rsaPublicKey  = keyPair.publicKey;
+  console.log('🔐 Chave pública do servidor importada.');
 }
 
+// ─────────────────────────────────────────────────────────────
+// 2. Gera par de chaves do BROWSER e faz handshake com servidor
+//    (para que o servidor criptografe as respostas para nós)
+// ─────────────────────────────────────────────────────────────
 async function realizarHandshake() {
   if (handshakeDone) return;
-  await gerarParDeChaves();
+
+  const kp = await crypto.subtle.generateKey(
+    { name: 'RSA-OAEP', modulusLength: 2048, publicExponent: new Uint8Array([1,0,1]), hash: 'SHA-256' },
+    true, ['encrypt', 'decrypt']
+  );
+  rsaPrivateKey = kp.privateKey;
+  rsaPublicKey  = kp.publicKey;
+
   const spki   = await crypto.subtle.exportKey('spki', rsaPublicKey);
   const base64  = btoa(String.fromCharCode(...new Uint8Array(spki)));
+
   const res = await fetch(`${API}/handshake`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ publicKey: base64 })
   });
   if (!res.ok) throw new Error(`Handshake falhou: HTTP ${res.status}`);
+
   handshakeDone = true;
+  console.log('🔑 Handshake concluído: respostas do servidor serão criptografadas.');
 }
 
+// ─────────────────────────────────────────────────────────────
+// 3. Criptografa um texto com a chave pública do SERVIDOR
+//    (divide em chunks de 190 bytes — limite do RSA-2048 OAEP)
+// ─────────────────────────────────────────────────────────────
+async function encryptForServer(texto) {
+  if (!servidorPublicKey) throw new Error('Chave pública do servidor não carregada.');
+
+  const bytes = new TextEncoder().encode(texto);
+  const CHUNK = 190;
+  const chunks = [];
+
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    const slice = bytes.slice(i, i + CHUNK);
+    const encrypted = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, servidorPublicKey, slice);
+    chunks.push(btoa(String.fromCharCode(...new Uint8Array(encrypted))));
+  }
+  return chunks; // array de strings Base64
+}
+
+// ─────────────────────────────────────────────────────────────
+// 4. Descriptografa uma resposta criptografada do servidor
+// ─────────────────────────────────────────────────────────────
 async function decryptResponse(res) {
   const encrypted = res.headers.get('X-Content-Encrypted');
-  if (encrypted === 'false' || encrypted === null) {
-    return res.json();
-  }
-  const chunksJson = await res.text();
-  const chunks = JSON.parse(chunksJson);
+  if (encrypted === 'false' || encrypted === null) return res.json();
+
+  const chunks = JSON.parse(await res.text());
   const allBytes = [];
   for (const chunk of chunks) {
     const cipherBytes = Uint8Array.from(atob(chunk), c => c.charCodeAt(0));
-    const plainBuffer = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, rsaPrivateKey, cipherBytes);
-    allBytes.push(...new Uint8Array(plainBuffer));
+    const plain = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, rsaPrivateKey, cipherBytes);
+    allBytes.push(...new Uint8Array(plain));
   }
   return JSON.parse(new TextDecoder().decode(new Uint8Array(allBytes)));
 }
 
-// ── Inicialização ──
+// ─────────────────────────────────────────────────────────────
+// Inicialização: busca chave do servidor + faz handshake
+// ─────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   try {
+    await buscarChaveServidor();
     await realizarHandshake();
-    console.log('🔑 Handshake RSA realizado com sucesso.');
   } catch (err) {
-    console.error('Handshake falhou:', err);
+    console.error('Erro na inicialização de segurança:', err);
+    showToast('Erro ao inicializar segurança!', 'erro');
   }
 });
 
@@ -78,7 +124,7 @@ function mostrarLogin() {
   limparCadastro();
 }
 
-// ── Login ──
+// ── Login (credenciais criptografadas com chave pública do servidor) ──
 async function fazerLogin() {
   const usuario = document.getElementById('loginUsuario').value.trim();
   const senha   = document.getElementById('pwdInput').value;
@@ -89,10 +135,14 @@ async function fazerLogin() {
   }
 
   try {
+    // Criptografa as credenciais com a chave pública do servidor
+    const credenciais = JSON.stringify({ usuario, senha });
+    const chunks = await encryptForServer(credenciais);
+
     const res = await fetch(`${API}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ usuario, senha })
+      body: JSON.stringify(chunks)   // envia array de chunks criptografados
     });
 
     if (res.ok) {
@@ -108,30 +158,24 @@ async function fazerLogin() {
   }
 }
 
-// ── Criar conta ──
+// ── Criar conta (credenciais criptografadas com chave pública do servidor) ──
 async function criarConta() {
   const usuario = document.getElementById('cadUsuario').value.trim();
   const senha   = document.getElementById('cadSenha').value;
   const conf    = document.getElementById('cadSenhaConf').value;
 
-  if (!usuario || !senha || !conf) {
-    showToast('Preencha todos os campos!', 'erro');
-    return;
-  }
-  if (senha !== conf) {
-    showToast('As senhas não coincidem!', 'erro');
-    return;
-  }
-  if (senha.length < 4) {
-    showToast('Senha deve ter ao menos 4 caracteres!', 'erro');
-    return;
-  }
+  if (!usuario || !senha || !conf) { showToast('Preencha todos os campos!', 'erro'); return; }
+  if (senha !== conf)               { showToast('As senhas não coincidem!', 'erro'); return; }
+  if (senha.length < 4)             { showToast('Senha deve ter ao menos 4 caracteres!', 'erro'); return; }
 
   try {
+    const credenciais = JSON.stringify({ usuario, senha });
+    const chunks = await encryptForServer(credenciais);
+
     const res = await fetch(`${API}/cadastro`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ usuario, senha })
+      body: JSON.stringify(chunks)
     });
 
     if (res.ok) {
