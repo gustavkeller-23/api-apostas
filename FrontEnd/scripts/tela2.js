@@ -1,4 +1,4 @@
-const API = 'http://localhost:8080';
+const API = 'https://lutadores-api-22f61a69f511.herokuapp.com';
 
 // ── Dados ──
 const artes = { '1': 'Boxe', '2': 'Karatê', '3': 'Muay Thai' };

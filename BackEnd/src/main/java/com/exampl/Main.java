@@ -11,7 +11,10 @@ import java.net.InetSocketAddress;
 
 public class Main {
 
-    private static final int  PORTA          = 8080;
+    // Heroku define a variável PORT dinamicamente; localmente usa 8080
+    private static final int PORTA = System.getenv("PORT") != null
+            ? Integer.parseInt(System.getenv("PORT"))
+            : 8080;
     private static LutadorRoutes     lutadorRoute    = new LutadorRoutes();
     private static UsuarioRoutes     usuarioRoute    = new UsuarioRoutes();
     private static HandshakeRoutes   handshakeRoute  = new HandshakeRoutes();

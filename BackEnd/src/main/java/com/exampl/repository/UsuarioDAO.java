@@ -14,7 +14,10 @@ import java.util.List;
 
 public class UsuarioDAO {
 
-    private static final String CONNECTION_STRING = "mongodb://localhost:27017";
+    // Lê a URI do MongoDB da variável de ambiente (Heroku) ou usa localhost como fallback
+    private static final String CONNECTION_STRING = System.getenv("MONGODB_URI") != null
+            ? System.getenv("MONGODB_URI")
+            : "mongodb://localhost:27017";
     private static final String DATABASE_NAME     = "autenticacaoDB";
     private static final String COLLECTION_NAME   = "usuarios";
 
@@ -26,6 +29,7 @@ public class UsuarioDAO {
         this.mongoClient = MongoClients.create(CONNECTION_STRING);
         this.database    = mongoClient.getDatabase(DATABASE_NAME);
         this.collection  = database.getCollection(COLLECTION_NAME);
+        System.out.println("🍃 MongoDB (Usuários) conectado: " + CONNECTION_STRING.replaceAll(":.*@", ":***@"));
 
         // Remove índice antigo de 'email' caso ainda exista no banco (migração)
         try { collection.dropIndex("email_1"); } catch (Exception ignored) {}
